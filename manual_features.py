@@ -1,12 +1,11 @@
-def common_authors_publication(node_0, node_1):
+import numpy as np
+import networkx as nx
+import csv
+
+def common_authors_publication(node_0, node_1,authors_dict):
     '''
     give back the number document the common authors released
     '''
-    #WHERE IS THIS FILE CREATED
-    co_aut_dict_file = open("co-authors_dict.pkl", "rb")
-    dict_coauthors = pickle.load(co_aut_dict_file)
-    co_aut_dict_file.close()
-
     list_authors_0 = authors_dict[int(node_0)]
     list_authors_1 = authors_dict[int(node_1)]
     common = list(set(list_authors_0).intersection(list_authors_1))
@@ -19,7 +18,7 @@ def common_authors_publication(node_0, node_1):
 
     return len(common), nb_copubli
 
-def check_autocitation(node_0, node_1):
+def check_autocitation(node_0, node_1,authors_dict):
     '''
     Check if at least 1 author is in common in a pair of articles
 
@@ -33,7 +32,7 @@ def check_autocitation(node_0, node_1):
         autocitation = 1
     return autocitation      
       
-def overlap_authors(node_0, node_1):
+def overlap_authors(node_0, node_1,authors_dict):
     '''
     Check if at least 1 author is in common in a pair of articles
     
