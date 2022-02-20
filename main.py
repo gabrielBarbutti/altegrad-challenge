@@ -1,7 +1,19 @@
 import argparse
 
 import networkx as nx
+import csv
+import numpy as np
+from random import randint
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from torch.optim.lr_scheduler import StepLR
 
+from data import MyDataset
+from train import train
+from model import MLP
+from ___ import generate_abst_emb
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -20,6 +32,10 @@ parser.add_argument('--node2vec_file', type=str, default='saved_model_embed_dim_
 # Train arguments
 parser.add_argument('--lr', type=float, default=0.001,
                     help='Learning rate')
+parser.add_argument('--decay_stp_sz', type=int, default=10,
+                    help='Learning decay step size')
+parser.add_argument('--decay_gamma', type=float, default=0.7,
+                    help='Learning decay gamma')                    
 parser.add_argument('--batch_size', type=int, default=512,
                     help='Batch size')
 parser.add_argument('--n_epochs', type=int, default=10,
@@ -84,20 +100,20 @@ for i in range(m):
 # Create training dataset
 dataset = MyDataset(G, node_pairs, abstracts_embeds, node2vec_model.wv)
 
-batch_size = 512
+batch_size = args.batch_size
 train_set, test_set = torch.utils.data.random_split(dataset, [int(2*m*0.8), 2*m - int(2*m*0.8)])
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
-###CONTINUE WORINKING FROM HERE
-from torch.optim.lr_scheduler import StepLR
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-n_epochs = 20
+n_epochs = args.n_epochs
+
 model = MLP(768, 67).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
-scheduler = StepLR(optimizer, step_size=10, gamma=0.7)
+scheduler = StepLR(optimizer, step_size=args.decay_stp_sz, gamma=args.decay_gamma)
+
+###CONTINUE WORINKING FROM HERE
 
 train_losses_aux, test_losses_aux = train(model, device, train_loader, test_loader, optimizer, criterion, n_epochs, scheduler)
