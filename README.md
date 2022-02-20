@@ -1,6 +1,6 @@
 # MVA Altegrad challenge 2021
 
-##Link prediction
+## Link prediction
 
 Team members :
 * Gabriel Baker : gabriel.baker@telecom-paris.fr
