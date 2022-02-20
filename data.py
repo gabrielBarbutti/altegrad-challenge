@@ -1,11 +1,16 @@
+import networkx as nx
+import numpy as np
 from networkx.algorithms.link_analysis.pagerank_alg import pagerank
+from manual_features import common_authors_publication,get_jaccard_index,get_adamic_adar_index,get_degree
+
 
 class MyDataset(Dataset):
-    def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds):
+    def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds,authors_embeds):
 
     #def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds):
         self.abstracts_embeds = abstracts_embeds
         self.nodes_embeds = nodes_embeds
+        self.authors_embeds = authors_embeds
         self.node_pairs = node_pairs        
         m = len(node_pairs)//2
         self.G = G
@@ -21,7 +26,7 @@ class MyDataset(Dataset):
 
     def __getitem__(self, index):
         n1, n2 = self.node_pairs[index]
-        common_auth,common_pub = common_authors_publication(int(n1),int(n2)) 
+        common_auth,common_pub = common_authors_publication(int(n1),int(n2),self.authors_embeds) 
         authors_emb = np.concatenate((common_auth,common_pub),axis=None)
         x_abstracts = np.concatenate((self.abstracts_embeds[int(n1)],
                                       self.abstracts_embeds[int(n2)]))      
