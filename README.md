@@ -16,6 +16,8 @@ It contains different sources of data (abstract, authors and edge connections)
 ## Experiments / Results
 In order to leverage the most of our three different sources of data (abstracts, authors and edges connections), we tested different strategies of feature extraction for each source and different combinations of the generated features.
 
+The table  summarizes the results of our best input combinations, but not of the best models, as there were small variations that produced better models than the first 3 lines (the last line was indeed our best model). An example of this are the models of the second and third rows (SBERT \& GAT / SBERT \& Doc2Vec), which performed better when training with the whole dataset, but we decided to present the results of all models with the division of training and validation set to have a fairer comparison.
+
 | Abstract Embedding | Node Embedding | Manual features | Train | Val | Test |
 | ------------- | ------------- | ------------- | --------- | --------- |--------- |
 | Doc2Vec | Node2Vec | No  | 0.078 | 0.052 | 0.225 |
