@@ -17,6 +17,8 @@ from train import train
 from model import MLP
 from sbert import generate_abst_emb_sbert
 from node2vec import generate_node_emb_node2vec
+#from doc2vec import generate_abst_emb_doc2vec
+#from gat import generate_node_emb_gat
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -29,7 +31,7 @@ parser.add_argument('--base_feats_dir', type=str, default='./saved_feats',
                     help='Path to the pre computed features')
 parser.add_argument('--abst_emb_file', type=str, default='abstracts_embeds_bert.pkl',
                     help='File name of the abstracts embeddings')
-parser.add_argument('--node_emb_file', type=str, default='saved_model_embed_dim_64',
+parser.add_argument('--node_emb_file', type=str, default='nodes_embeds_node2vec.pkl',
                     help='File name of the trained Node2Vec model')
 
 # Train arguments
@@ -47,6 +49,12 @@ parser.add_argument('--n_epochs', type=int, default=10,
                     help='Number of epochs')
 parser.add_argument('--model_base_dir', type=str, default='./model_weights/',
                     help='Directory to save model weights')
+
+# Model choices
+parser.add_argument('--hidden_size', type=int, default=100,
+                    help='Hidden size of the main classification model')
+parser.add_argument('--dropout', type=float, default=0.4,
+                    help='Dropout used in the main classification model')
 
 # Choose embedding techinique
 parser.add_argument('--abstract_emb_type', type=str, default='sbert', choices=['sbert', 'doc2vec'],
@@ -88,7 +96,6 @@ with open(f'{args.base_data_dir}/authors.txt', 'r', encoding="utf8") as f:
         authors[-1] = authors[-1][:-1] #removing the \n on last name
         authors_dict[int(node)] = authors
 
-
 # Load abstract embeddings if it exist, otherwise generate them
 abstract_embed_path = Path(args.base_feats_dir+'/'+args.abst_emb_file)
 if abstract_embed_path.is_file():
@@ -99,12 +106,11 @@ if abstract_embed_path.is_file():
 else :
     if args.abstract_emb_type == 'sbert':
         abstracts_embeds = generate_abst_emb_sbert(abstracts, abstract_embed_path)
-        abstract_feat_size = 768
     elif args.abstract_emb_type == 'doc2vec':
         abstracts_embeds = generate_abst_emb_doc2vec(abstracts, abstract_embed_path, args.doc2vec_dim)
-        abstract_feat_size = args.doc2vec_dim
     else:
         raise ValueError('Embedding type not supported for the abstracts')
+abstract_feat_size = abstracts_embeds.shape[1]
 
 # Load node embeddings if it exist, otherwise generate them
 node_embed_path = Path(args.base_feats_dir+'/'+args.node_emb_file)
@@ -116,12 +122,11 @@ if node_embed_path.is_file():
 else :
     if args.node_emb_type == 'node2vec':
         nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, args.doc2vec_dim)
-        node_feat_size = args.node2vec_dim
     elif args.node_emb_type == 'gat':
         nodes_embeds = generate_node_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
-        node_feat_size = 512
     else:
         raise ValueError('Embedding type not supported for the nodes')
+node_feat_size = nodes_embeds.shape[1]
 
 # Add dimensions in the model for the manual features
 if args.use_manual_features:
@@ -138,8 +143,14 @@ for i in range(m):
         nodes = np.random.randint(0, n, size=(2,))
     node_pairs[m+i] = nodes
 
+# Load co-authors dict
+f = open("co-authors_dict.pkl", "rb")
+coauthors_dict = pickle.load(f)
+f.close()
+
 # Create training dataset
-dataset = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds, args.use_manual_features)
+dataset = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds, authors_dict,
+                    coauthors_dict, args.use_manual_features)
 
 batch_size = args.batch_size
 train_set, val_set = torch.utils.data.random_split(dataset, [int(2*m*args.train_percent), 2*m - int(2*m*args.train_percent)])
@@ -155,7 +166,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
 scheduler = StepLR(optimizer, step_size=args.decay_stp_sz, gamma=args.decay_gamma)
 
-train_losses, val_losses = train(model, device, train_loader, val_loader, optimizer, criterion, n_epochs, scheduler)
+train_losses, val_losses = train(model, device, train_loader, val_loader, optimizer,
+                                 criterion, n_epochs, scheduler, args.model_base_dir)
 
 node_pairs = list()
 with open('./data/test.txt', 'r') as f:

@@ -1,4 +1,7 @@
 from gensim.models import Word2Vec
+from node2vec import Node2Vec
+import numpy as np
+import pickle
 
 def generate_node_emb_node2vec(G, node_embed_path, n, dim_emb):
     node2vec_embed = np.zeros((n,dim_emb))

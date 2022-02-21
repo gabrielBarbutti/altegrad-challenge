@@ -1,5 +1,8 @@
+from tqdm import tqdm
+import torch
+
 def train(model, device, train_loader, test_loader, optimizer, criterion,
-          n_epochs, scheduler, save_model, model_path):
+          n_epochs, scheduler, model_path):
     train_losses = []
     test_losses = []
     F_best_test_loss = 10
@@ -40,7 +43,7 @@ def train(model, device, train_loader, test_loader, optimizer, criterion,
                 test_loss = test_loss.item()
                 pbar.set_postfix({'train loss':train_loss, 'test loss':test_loss})
                 test_losses.append(test_loss)
-                if test_loss<=F_best_test_loss and save_model:
+                if test_loss<=F_best_test_loss:
                     F_best_test_loss = test_loss
                     torch.save(model.state_dict(), model_path)
                     print("Model saved")

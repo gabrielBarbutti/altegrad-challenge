@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import csv
 
-def common_authors_publication(node_0, node_1, authors_dict):
+def common_authors_publication(node_0, node_1, authors_dict, dict_coauthors):
     '''
     give back the number document the common authors released
     '''

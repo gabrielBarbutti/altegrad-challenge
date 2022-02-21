@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 import numpy as np
+import pickle
 import nltk
 
 try:
@@ -11,6 +12,7 @@ except LookupError:
 
 def generate_abst_emb_sbert(abstracts, abstract_embed_path):
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+    n = len(abstracts)
 
     print('Tokenizing data')
     documents = []

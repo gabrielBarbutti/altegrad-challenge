@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import torch
 from networkx.algorithms.link_analysis.pagerank_alg import pagerank
 from manual_features import common_authors_publication,get_jaccard_index,get_adamic_adar_index,get_degree
 
@@ -7,10 +8,11 @@ from torch.utils.data import Dataset
 
 class MyDataset(Dataset):
     def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds,
-                 authors_dict, use_manual_features):
+                 authors_dict, coauthors_dict, use_manual_features):
         self.abstracts_embeds = abstracts_embeds
         self.nodes_embeds = nodes_embeds
         self.authors_dict = authors_dict
+        self.coauthors_dict = coauthors_dict
         self.use_manual_features = use_manual_features
         self.node_pairs = node_pairs
         m = len(node_pairs)//2
@@ -38,7 +40,8 @@ class MyDataset(Dataset):
                                   self.nodes_embeds[int(n2)]))
 
         if self.use_manual_features:
-            common_auth,common_pub = common_authors_publication(int(n1),int(n2), self.authors_dict)
+            common_auth,common_pub = common_authors_publication(int(n1),int(n2),
+                                            self.authors_dict, self.coauthors_dict)
             authors_emb = np.concatenate((common_auth,common_pub),axis=None)
             x_sum_degree = self.degree[n1] + self.degree[n2]
             x_diff_degree = abs(self.degree[n1] - self.degree[n2])
