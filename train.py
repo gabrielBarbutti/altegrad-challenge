@@ -23,8 +23,8 @@ def train(model, device, train_loader, test_loader, optimizer, criterion,
                 train_loss = total_loss/(idx+1)
                 pbar.set_postfix({'train loss':train_loss, 'test loss':test_loss})
                 pbar.update(1)
-            
-            
+
+
             if test_loader is not None:
                 model.eval()
                 test_loss = 0
@@ -44,11 +44,11 @@ def train(model, device, train_loader, test_loader, optimizer, criterion,
                     F_best_test_loss = test_loss
                     torch.save(model.state_dict(), model_path)
                     print("Model saved")
-                
+
                 model.train()
-                
-             
+
+
             train_losses.append(train_loss)
             scheduler.step()
-            
+
     return train_losses, test_losses

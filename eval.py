@@ -16,7 +16,7 @@ with torch.no_grad():
         x_abstracts = x_abstracts.to(device)
         x_nodes = x_nodes.to(device)
         y = y.to(device)
-        y_pred += (F.softmax(model(x_abstracts, x_nodes), dim=1)[:, 1]).detach().cpu().tolist()   
+        y_pred += (F.softmax(model(x_abstracts, x_nodes), dim=1)[:, 1]).detach().cpu().tolist()
 
 
 

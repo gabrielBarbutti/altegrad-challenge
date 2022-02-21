@@ -13,10 +13,10 @@ class MLP(nn.Module):
                                           nn.ReLU(),
                                           nn.BatchNorm1d(num_features=2*hidden_size),
                                           nn.Dropout(p=dropout),
-                                          
+
                                           nn.Linear(2*hidden_size, 2),
                                           nn.LogSoftmax(dim=1))
-        
+
     def forward(self, x_abstracts, x_nodes):
         x_abstracts = self.abstracts_layers(x_abstracts)
         x_nodes = self.nodes_layers(x_nodes)

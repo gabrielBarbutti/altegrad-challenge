@@ -11,10 +11,10 @@ def common_authors_publication(node_0, node_1, authors_dict):
     common = list(set(list_authors_0).intersection(list_authors_1))
     nb_copubli = 0
     for author0 in list_authors_0 :
-      for author1 in list_authors_1 :
-        if author0!= author1:
-            if author1 in dict_coauthors[author0]:
-              nb_copubli += dict_coauthors[author0][author1]
+        for author1 in list_authors_1 :
+            if author0!= author1:
+                  if author1 in dict_coauthors[author0]:
+                      nb_copubli += dict_coauthors[author0][author1]
 
     return len(common), nb_copubli
 

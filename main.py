@@ -14,6 +14,7 @@ from data import MyDataset
 from train import train
 from model import MLP
 from sbert import generate_abst_emb_sbert
+from node2vec import generate_node_emb_node2vec
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -37,7 +38,7 @@ parser.add_argument('--lr', type=float, default=0.001,
 parser.add_argument('--decay_stp_sz', type=int, default=10,
                     help='Learning decay step size')
 parser.add_argument('--decay_gamma', type=float, default=0.7,
-                    help='Learning decay gamma')                    
+                    help='Learning decay gamma')
 parser.add_argument('--batch_size', type=int, default=512,
                     help='Batch size')
 parser.add_argument('--n_epochs', type=int, default=10,
@@ -112,11 +113,11 @@ if node_embed_path.is_file():
     embed_file.close()
 else :
     if args.node_emb_type == 'node2vec':
-        nodes_embeds = generate_abst_emb_node2vec(CHANGE, node_embed_path)
+        nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, dim_emb)
         node_feat_size = args.node2vec_dim
     elif args.node_emb_type == 'gat':
-        nodes_embeds = generate_abst_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
-        node_feat_size = 
+        nodes_embeds = generate_node_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
+        node_feat_size =
     else:
         raise ValueError('Embedding type not supported for the nodes')
 
@@ -136,7 +137,7 @@ for i in range(m):
     node_pairs[m+i] = nodes
 
 # Create training dataset
-dataset = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds)
+dataset = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds, args.use_manual_features)
 
 batch_size = args.batch_size
 train_set, val_set = torch.utils.data.random_split(dataset, [int(2*m*args.train_percent), 2*m - int(2*m*args.train_percent)])
