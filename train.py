@@ -1,3 +1,5 @@
+from torch import nn
+
 def train(model, device, train_loader, test_loader, optimizer, criterion,
           n_epochs, scheduler, save_model, model_path):
     train_losses = []

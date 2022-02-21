@@ -3,6 +3,7 @@ import numpy as np
 from networkx.algorithms.link_analysis.pagerank_alg import pagerank
 from manual_features import common_authors_publication,get_jaccard_index,get_adamic_adar_index,get_degree
 
+from torch.utils.data import Dataset
 
 class MyDataset(Dataset):
     def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds,

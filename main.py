@@ -27,7 +27,7 @@ parser.add_argument('--base_feats_dir', type=str, default='./saved_feats',
                     help='Path to the pre computed features')
 parser.add_argument('--abst_emb_file', type=str, default='abstracts_embeds_bert.pkl',
                     help='File name of the abstracts embeddings')
-parser.add_argument('--node2vec_file', type=str, default='saved_model_embed_dim_64',
+parser.add_argument('--node_emb_file', type=str, default='saved_model_embed_dim_64',
                     help='File name of the trained Node2Vec model')
 
 # Train arguments
@@ -88,7 +88,7 @@ with open(f'{args.base_data_dir}/authors.txt', 'r', encoding="utf8") as f:
 
 
 # Load abstract embeddings if it exist, otherwise generate them
-abstract_embed_path = Path(args.base_feats_dir+args.abstract_embed_path)
+abstract_embed_path = Path(args.base_feats_dir+args.abst_emb_file)
 if abstract_embed_path.is_file():
     print('Loading abstract embeddings')
     embed_file = open(abstract_embed_path, "rb")
@@ -105,7 +105,7 @@ else :
         raise ValueError('Embedding type not supported for the abstracts')
 
 # Load node embeddings if it exist, otherwise generate them
-node_embed_path = Path(args.base_feats_dir+args.node_embed_path)
+node_embed_path = Path(args.base_feats_dir+args.node_emb_file)
 if node_embed_path.is_file():
     print('Loading node embeddings')
     embed_file = open(node_embed_path, "rb")
@@ -117,7 +117,7 @@ else :
         node_feat_size = args.node2vec_dim
     elif args.node_emb_type == 'gat':
         nodes_embeds = generate_node_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
-        node_feat_size =
+        node_feat_size = 512
     else:
         raise ValueError('Embedding type not supported for the nodes')
 
