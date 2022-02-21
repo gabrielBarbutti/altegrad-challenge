@@ -1,7 +1,6 @@
 # MVA Altegrad challenge 2021
 
 ## Link prediction
-
 Team members :
 * Gabriel Baker : gabriel.baker@telecom-paris.fr
 * Yujin Cho : yujin.cho@ens-paris-saclay.fr
@@ -14,16 +13,37 @@ The problem was proposed in the ALTEGRAD course and is the objective of a Kaggle
 It contains different sources of data (abstract, authors and edge connections)
 
 ## Runing the script
+To facilitate the run of our model we created a colab notebook available [here](https://colab.research.google.com/drive/1SapsWlFHveQJoVZ9UJ6B1MmEh0X-3hQL?usp=sharing).
 
-```Python
-!python main.py --abstract_emb_type sbert
-```
+But you can also locally train the model as explained below.
 
-Please install following libraries
+#### Prepare the environment
+We recommend the download of the following folders with the precomputed features and the dataset.
+
+- ./data [Google drive link](https://drive.google.com/drive/folders/1Li1ycoCGqvFARk8992R5UTL2D56cn6pg?usp=sharing)
+- ./saved\_feats [Google drive link](https://drive.google.com/drive/folders/1bqoZ9bxdFn7iLexoQ_Em69EvdzC4KdD0?usp=sharing)
+
+Please install the following not so common libraries
+
 ```Python
 !pip install -qU sentence-transformers
-!pip install node2vec
-!pip install --upgrade gensim
+!pip install -q node2vec
+!pip install -q --upgrade gensim
+!pip install -q dgl
+```
+
+#### Training
+Use this command to reproduce our best model
+
+```
+python main.py --use_manual_features
+```
+
+#### Evaluate
+To create the submission file run the following
+
+```
+python eval.py --use_manual_features
 ```
 
 ## Experiments / Results
