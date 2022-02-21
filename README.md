@@ -32,4 +32,4 @@ The table  summarizes the results of our best input combinations, but not of the
 | Doc2Vec | Node2Vec | No  | 0.078 | 0.052 | 0.225 |
 | SBERT | GAT | No  | 0.087 | 0.082 | 0.143 |
 | SBERT | Node2Vec | No  | 0.061 | 0.052 | 0.146 |
-| SBERT | Node2Vec | Yes  | TBD | TBD | TBD |
+| SBERT | Node2Vec | Yes  | 0.059 | 0.048 | 0.104 |
