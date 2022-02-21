@@ -15,6 +15,10 @@ It contains different sources of data (abstract, authors and edge connections)
 
 ## Runing the script
 
+```Python
+!python main.py --abstract_emb_type sbert
+```
+
 Please install following libraries
 ```Python
 !pip install -qU sentence-transformers
