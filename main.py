@@ -17,8 +17,8 @@ from train import train
 from model import MLP
 from SBERT import generate_abst_emb_sbert
 from Node2Vec import generate_node_emb_node2vec
-from doc2vec import generate_abst_emb_doc2vec
-from gat import generate_node_emb_gat
+from Doc2Vec import generate_abst_emb_doc2vec
+from GAT import generate_node_emb_gat
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -116,7 +116,7 @@ else :
     if args.abstract_emb_type == 'sbert':
         abstracts_embeds = generate_abst_emb_sbert(abstracts, abstract_embed_path)
     elif args.abstract_emb_type == 'doc2vec':
-        abstracts_embeds = generate_node_emb_doc2vec(abstracts, abstract_embed_path,
+        abstracts_embeds = generate_abst_emb_doc2vec(abstracts, abstract_embed_path,
                                                      abstracts_path, n, args.doc2vec_dim)
     else:
         raise ValueError('Embedding type not supported for the abstracts')
@@ -140,6 +140,7 @@ node_feat_size = nodes_embeds.shape[1]
 
 # Add dimensions in the model for the manual features
 if args.use_manual_features:
+    print('Using manual features')
     node_feat_size += 3
 
 # Generate positive and negative edges list
@@ -154,7 +155,7 @@ for i in range(m):
     node_pairs[m+i] = nodes
 
 # Load co-authors dict
-f = open(Path(args.base_feats_dir).joinpath(args.coauthors_file, "rb"))
+f = open(Path(args.base_feats_dir).joinpath(args.coauthors_file), "rb")
 coauthors_dict = pickle.load(f)
 f.close()
 

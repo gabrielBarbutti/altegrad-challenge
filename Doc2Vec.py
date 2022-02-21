@@ -5,7 +5,7 @@ import pickle
 def generate_embedding(model,document):
     return model.infer_vector(document.split())
 
-def generate_node_emb_doc2vec(abstracts, abstract_embed_path, abstracts_path, n, dim_emb):
+def generate_abst_emb_doc2vec(abstracts, abstract_embed_path, abstracts_path, n, dim_emb):
     print('Building abstract embeddings')
     documents = [TaggedDocument(abstracts[key], [i]) for i, key in enumerate(abstracts)]
     model = Doc2Vec(documents, vector_size=dim_emb, min_count=2)

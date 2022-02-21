@@ -26,6 +26,8 @@ parser.add_argument('--abst_emb_file', type=str, default='abstracts_embeds_bert.
                     help='File name of the abstracts embeddings')
 parser.add_argument('--node_emb_file', type=str, default='nodes_embeds_node2vec.pkl',
                     help='File name of the trained Node2Vec model')
+parser.add_argument('--coauthors_file', type=str, default='co-authors_dict.pkl',
+                    help='File name of the co-authors dictionary')
 
 # Model choices
 parser.add_argument('--hidden_size', type=int, default=100,
@@ -37,19 +39,14 @@ parser.add_argument('--batch_size', type=int, default=512,
                     help='Batch size')
 parser.add_argument('--model_path', type=str, default='./model_weights/model.pt',
                     help='Directory to save model weights')
+parser.add_argument('--use_manual_features', action='store_true',
+                    help='Flag to use manual features')
+parser.add_argument('--subm_csv_path', type=str, default='submission.csv',
+                    help='Path location to save csv submission file')
 
 args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Construct test dataset
-node_pairs = list()
-test_path = Path(args.base_data_dir).joinpath('edgelist.txt')
-with open(test_path, 'r') as f:
-    for line in f:
-        t = line.split(',')
-        node_pairs.append((int(t[0]), int(t[1])))
-node_pairs = np.array(node_pairs)
 
 # Create the graph from an edge list file
 edgelist_path = Path(args.base_data_dir).joinpath('edgelist.txt')
@@ -84,7 +81,32 @@ else :
     raise ValueError('Nodes embedding needs to already be computed')
 node_feat_size = nodes_embeds.shape[1]
 
-test_set = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds)
+# Create authors dict
+authors_dict = dict()
+authors_path = Path(args.base_data_dir).joinpath('authors.txt')
+with open(authors_path, 'r', encoding="utf8") as f:
+    for line in f:
+        node, authors = line.split('|--|')
+        authors = authors.split(',')
+        authors[-1] = authors[-1][:-1] #removing the \n on last name
+        authors_dict[int(node)] = authors
+
+# Load co-authors dict
+f = open(Path(args.base_feats_dir).joinpath(args.coauthors_file), "rb")
+coauthors_dict = pickle.load(f)
+f.close()
+
+# Construct test dataset
+node_pairs = list()
+test_path = Path(args.base_data_dir).joinpath('test.txt')
+with open(test_path, 'r') as f:
+    for line in f:
+        t = line.split(',')
+        node_pairs.append((int(t[0]), int(t[1])))
+node_pairs = np.array(node_pairs)
+
+test_set = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds,
+                     authors_dict, coauthors_dict, args.use_manual_features)
 test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
 
 model = MLP(abstract_feat_size, node_feat_size, args.hidden_size, args.dropout).to(device)
@@ -103,8 +125,10 @@ with torch.no_grad():
 
 # Write predictions to a file
 predictions = zip(range(len(y_pred)), y_pred)
-with open("submission_bert_node2vec_mlp_0_7_dropout.csv","w") as pred:
+with open(args.subm_csv_path, "w") as pred:
     csv_out = csv.writer(pred)
     csv_out.writerow(['id','predicted'])
     for row in predictions:
         csv_out.writerow(row)
+
+print('Saved submission file', args.subm_csv_path)
