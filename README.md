@@ -13,6 +13,15 @@ The problem was proposed in the ALTEGRAD course and is the objective of a Kaggle
 ## Dataset
 It contains different sources of data (abstract, authors and edge connections)
 
+## Runing the script
+
+Please install following libraries
+```Python
+!pip install -qU sentence-transformers
+!pip install node2vec
+!pip install --upgrade gensim
+```
+
 ## Experiments / Results
 In order to leverage the most of our three different sources of data (abstracts, authors and edges connections), we tested different strategies of feature extraction for each source and different combinations of the generated features.
 
