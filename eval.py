@@ -1,13 +1,94 @@
+import csv
+import pickle
+import argparse
+import networkx as nx
+import numpy as np
+from pathlib import Path
+
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
+from model import MLP
+from data import MyDataset
+
+
+parser = argparse.ArgumentParser(description='ALTEGRAD challenge test file')
+
+# Data arguments
+parser.add_argument('--base_data_dir', type=str, default='./data',
+                    help='Path to the data folder')
+
+# Precomputed features
+parser.add_argument('--base_feats_dir', type=str, default='./saved_feats',
+                    help='Path to the pre computed features')
+parser.add_argument('--abst_emb_file', type=str, default='abstracts_embeds_bert.pkl',
+                    help='File name of the abstracts embeddings')
+parser.add_argument('--node_emb_file', type=str, default='nodes_embeds_node2vec.pkl',
+                    help='File name of the trained Node2Vec model')
+
+# Model choices
+parser.add_argument('--hidden_size', type=int, default=100,
+                    help='Hidden size of the main classification model')
+parser.add_argument('--dropout', type=float, default=0.4,
+                    help='Dropout used in the main classification model')
+
+parser.add_argument('--batch_size', type=int, default=512,
+                    help='Batch size')
+parser.add_argument('--model_path', type=str, default='./model_weights/model.pt',
+                    help='Directory to save model weights')
+
+args = parser.parse_args()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Construct test dataset
 node_pairs = list()
-with open('./test.txt', 'r') as f:
+test_path = Path(args.base_data_dir).joinpath('edgelist.txt')
+with open(test_path, 'r') as f:
     for line in f:
         t = line.split(',')
         node_pairs.append((int(t[0]), int(t[1])))
 node_pairs = np.array(node_pairs)
 
-test_set = MyDataset(G, node_pairs, abstracts_embeds, node2vec_model.wv)
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+# Create the graph from an edge list file
+edgelist_path = Path(args.base_data_dir).joinpath('edgelist.txt')
+G = nx.read_edgelist(edgelist_path, delimiter=',',
+                     create_using=nx.Graph(), nodetype=int)
+nodes = list(G.nodes())
+n = G.number_of_nodes()
+m = G.number_of_edges()
+print('Created graph')
+print('Number of nodes:', n)
+print('Number of edges:', m)
 
+# Load abstract embeddings if it exist, otherwise generate them
+abstract_embed_path = Path(args.base_feats_dir).joinpath(args.abst_emb_file)
+if abstract_embed_path.is_file():
+    print('Loading abstract embeddings')
+    f = open(abstract_embed_path, "rb")
+    abstracts_embeds = pickle.load(f)
+    f.close()
+else :
+    raise ValueError('Abstracts embedding needs to already be computed')
+abstract_feat_size = abstracts_embeds.shape[1]
+
+# Load node embeddings if it exist, otherwise generate them
+node_embed_path = Path(args.base_feats_dir).joinpath(args.node_emb_file)
+if node_embed_path.is_file():
+    print('Loading node embeddings')
+    f = open(node_embed_path, "rb")
+    nodes_embeds = pickle.load(f)
+    f.close()
+else :
+    raise ValueError('Nodes embedding needs to already be computed')
+node_feat_size = nodes_embeds.shape[1]
+
+test_set = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds)
+test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+
+model = MLP(abstract_feat_size, node_feat_size, args.hidden_size, args.dropout).to(device)
+model.load_state_dict(torch.load(args.model_path))
 
 y_pred = []
 model.eval()

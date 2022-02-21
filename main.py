@@ -15,10 +15,10 @@ import pickle
 from data import MyDataset
 from train import train
 from model import MLP
-from sbert import generate_abst_emb_sbert
-from node2vec import generate_node_emb_node2vec
-#from doc2vec import generate_abst_emb_doc2vec
-#from gat import generate_node_emb_gat
+from SBERT import generate_abst_emb_sbert
+from Node2Vec import generate_node_emb_node2vec
+from doc2vec import generate_abst_emb_doc2vec
+from gat import generate_node_emb_gat
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -33,6 +33,8 @@ parser.add_argument('--abst_emb_file', type=str, default='abstracts_embeds_bert.
                     help='File name of the abstracts embeddings')
 parser.add_argument('--node_emb_file', type=str, default='nodes_embeds_node2vec.pkl',
                     help='File name of the trained Node2Vec model')
+parser.add_argument('--coauthors_file', type=str, default='co-authors_dict.pkl',
+                    help='File name of the co-authors dictionary')
 
 # Train arguments
 parser.add_argument('--train_percent', type=float, default=0.8,
@@ -61,6 +63,8 @@ parser.add_argument('--abstract_emb_type', type=str, default='sbert', choices=['
                     help='Choose between abstract embedding types [sbert, doc2vec]')
 parser.add_argument('--doc2vec_dim', type=int, default=64,
                     help='Dimension for doc2vec embedding')
+parser.add_argument('--node2vec_dim', type=int, default=64,
+                    help='Dimension for node2vec embedding')
 parser.add_argument('--node_emb_type', type=str, default='node2vec', choices=['node2vec', 'gat'],
                     help='Choose between node embedding types [node2vec, gat]')
 parser.add_argument('--use_manual_features', action='store_true',
@@ -70,8 +74,11 @@ parser.add_argument('--use_manual_features', action='store_true',
 
 args = parser.parse_args()
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Create the graph from an edge list file
-G = nx.read_edgelist(f'{args.base_data_dir}/edgelist.txt', delimiter=',',
+edgelist_path = Path(args.base_data_dir).joinpath('edgelist.txt')
+G = nx.read_edgelist(edgelist_path, delimiter=',',
                      create_using=nx.Graph(), nodetype=int)
 nodes = list(G.nodes())
 n = G.number_of_nodes()
@@ -81,15 +88,17 @@ print('Number of nodes:', n)
 print('Number of edges:', m)
 
 # Create abstracts dict
+abstracts_path = Path(args.base_data_dir).joinpath('abstracts.txt')
 abstracts = dict()
-with open(f'{args.base_data_dir}/abstracts.txt', 'r', encoding="utf8") as f:
+with open(abstracts_path, 'r', encoding="utf8") as f:
     for line in f:
         node, abstract = line.split('|--|')
         abstracts[int(node)] = abstract[:-1] #Removes \n
 
 # Create authors dict
 authors_dict = dict()
-with open(f'{args.base_data_dir}/authors.txt', 'r', encoding="utf8") as f:
+authors_path = Path(args.base_data_dir).joinpath('authors.txt')
+with open(authors_path, 'r', encoding="utf8") as f:
     for line in f:
         node, authors = line.split('|--|')
         authors = authors.split(',')
@@ -97,33 +106,34 @@ with open(f'{args.base_data_dir}/authors.txt', 'r', encoding="utf8") as f:
         authors_dict[int(node)] = authors
 
 # Load abstract embeddings if it exist, otherwise generate them
-abstract_embed_path = Path(args.base_feats_dir+'/'+args.abst_emb_file)
+abstract_embed_path = Path(args.base_feats_dir).joinpath(args.abst_emb_file)
 if abstract_embed_path.is_file():
     print('Loading abstract embeddings')
-    embed_file = open(abstract_embed_path, "rb")
-    abstracts_embeds = pickle.load(embed_file)
-    embed_file.close()
+    f = open(abstract_embed_path, "rb")
+    abstracts_embeds = pickle.load(f)
+    f.close()
 else :
     if args.abstract_emb_type == 'sbert':
         abstracts_embeds = generate_abst_emb_sbert(abstracts, abstract_embed_path)
     elif args.abstract_emb_type == 'doc2vec':
-        abstracts_embeds = generate_abst_emb_doc2vec(abstracts, abstract_embed_path, args.doc2vec_dim)
+        abstracts_embeds = generate_node_emb_doc2vec(abstracts, abstract_embed_path,
+                                                     abstracts_path, n, args.doc2vec_dim)
     else:
         raise ValueError('Embedding type not supported for the abstracts')
 abstract_feat_size = abstracts_embeds.shape[1]
 
 # Load node embeddings if it exist, otherwise generate them
-node_embed_path = Path(args.base_feats_dir+'/'+args.node_emb_file)
+node_embed_path = Path(args.base_feats_dir).joinpath(args.node_emb_file)
 if node_embed_path.is_file():
     print('Loading node embeddings')
-    embed_file = open(node_embed_path, "rb")
-    nodes_embeds = pickle.load(embed_file)
-    embed_file.close()
+    f = open(node_embed_path, "rb")
+    nodes_embeds = pickle.load(f)
+    f.close()
 else :
     if args.node_emb_type == 'node2vec':
-        nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, args.doc2vec_dim)
+        nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, args.node2vec_dim)
     elif args.node_emb_type == 'gat':
-        nodes_embeds = generate_node_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
+        nodes_embeds = generate_node_emb_gat(edgelist_path, abstracts_embeds, node_embed_path, device)
     else:
         raise ValueError('Embedding type not supported for the nodes')
 node_feat_size = nodes_embeds.shape[1]
@@ -144,7 +154,7 @@ for i in range(m):
     node_pairs[m+i] = nodes
 
 # Load co-authors dict
-f = open("co-authors_dict.pkl", "rb")
+f = open(Path(args.base_feats_dir).joinpath(args.coauthors_file, "rb"))
 coauthors_dict = pickle.load(f)
 f.close()
 
@@ -157,8 +167,6 @@ train_set, val_set = torch.utils.data.random_split(dataset, [int(2*m*args.train_
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 n_epochs = args.n_epochs
 
 model = MLP(abstract_feat_size, node_feat_size, args.hidden_size, args.dropout).to(device)
@@ -168,33 +176,3 @@ scheduler = StepLR(optimizer, step_size=args.decay_stp_sz, gamma=args.decay_gamm
 
 train_losses, val_losses = train(model, device, train_loader, val_loader, optimizer,
                                  criterion, n_epochs, scheduler, args.model_base_dir)
-
-node_pairs = list()
-with open('./data/test.txt', 'r') as f:
-    for line in f:
-        t = line.split(',')
-        node_pairs.append((int(t[0]), int(t[1])))
-node_pairs = np.array(node_pairs)
-
-test_set = MyDataset(G, node_pairs, abstracts_embeds, node2vec_model.wv)
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
-
-
-y_pred = []
-model.eval()
-with torch.no_grad():
-    for idx, (x_abstracts, x_nodes, y) in enumerate(test_loader):
-        x_abstracts = x_abstracts.to(device)
-        x_nodes = x_nodes.to(device)
-        y = y.to(device)
-        y_pred += (F.softmax(model(x_abstracts, x_nodes), dim=1)[:, 1]).detach().cpu().tolist()
-
-
-
-# Write predictions to a file
-predictions = zip(range(len(y_pred)), y_pred)
-with open("submission_bert_node2vec_mlp_0_7_dropout.csv","w") as pred:
-    csv_out = csv.writer(pred)
-    csv_out.writerow(['id','predicted'])
-    for row in predictions:
-        csv_out.writerow(row)

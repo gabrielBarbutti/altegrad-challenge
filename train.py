@@ -1,8 +1,13 @@
 from tqdm import tqdm
 import torch
+import os
 
 def train(model, device, train_loader, test_loader, optimizer, criterion,
           n_epochs, scheduler, model_path):
+    # Create a new directory because it does not exist 
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+
     train_losses = []
     test_losses = []
     F_best_test_loss = 10
@@ -45,8 +50,8 @@ def train(model, device, train_loader, test_loader, optimizer, criterion,
                 test_losses.append(test_loss)
                 if test_loss<=F_best_test_loss:
                     F_best_test_loss = test_loss
-                    torch.save(model.state_dict(), model_path)
-                    print("Model saved")
+                    torch.save(model.state_dict(), os.path.join(model_path, 'model.pt'))
+                    print("\nModel saved")
 
                 model.train()
 
