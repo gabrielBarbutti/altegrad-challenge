@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import csv
 
-def common_authors_publication(node_0, node_1,authors_dict):
+def common_authors_publication(node_0, node_1, authors_dict):
     '''
     give back the number document the common authors released
     '''
@@ -17,32 +17,6 @@ def common_authors_publication(node_0, node_1,authors_dict):
               nb_copubli += dict_coauthors[author0][author1]
 
     return len(common), nb_copubli
-
-def check_autocitation(node_0, node_1,authors_dict):
-    '''
-    Check if at least 1 author is in common in a pair of articles
-
-    Returns a binary variable =0 if none author in common and =1 if any
-    '''
-    list_authors_0 = authors_dict[int(node_0)]
-    list_authors_1 = authors_dict[int(node_1)]
-    if not list(set(list_authors_0).intersection(list_authors_1)):
-        autocitation = 0
-    else : 
-        autocitation = 1
-    return autocitation      
-      
-def overlap_authors(node_0, node_1,authors_dict):
-    '''
-    Check if at least 1 author is in common in a pair of articles
-    
-    Returns a binary variable =0 if none author in common and =1 if any
-    '''
-    list_authors_0 = authors_dict[int(node_0)]
-    list_authors_1 = authors_dict[int(node_1)]
-    overlap = list(set(list_authors_0).intersection(list_authors_1))
-
-    return len(overlap)
 
 def get_degree(G):
     dict_degrees = {}

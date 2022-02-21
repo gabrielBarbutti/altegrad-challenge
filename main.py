@@ -13,7 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 from data import MyDataset
 from train import train
 from model import MLP
-from ___ import generate_abst_emb
+from sbert import generate_abst_emb_sbert
 
 parser = argparse.ArgumentParser(description='ALTEGRAD challenge main train file')
 
@@ -30,6 +30,8 @@ parser.add_argument('--node2vec_file', type=str, default='saved_model_embed_dim_
                     help='File name of the trained Node2Vec model')
 
 # Train arguments
+parser.add_argument('--train_percent', type=float, default=0.8,
+                    help='Percentage of data to be used in the training set')
 parser.add_argument('--lr', type=float, default=0.001,
                     help='Learning rate')
 parser.add_argument('--decay_stp_sz', type=int, default=10,
@@ -42,6 +44,17 @@ parser.add_argument('--n_epochs', type=int, default=10,
                     help='Number of epochs')
 parser.add_argument('--model_base_dir', type=str, default='./model_weights/',
                     help='Directory to save model weights')
+
+# Choose embedding techinique
+parser.add_argument('--abstract_emb_type', type=str, default='sbert', choices=['sbert', 'doc2vec'],
+                    help='Choose between abstract embedding types [sbert, doc2vec]')
+parser.add_argument('--doc2vec_dim', type=int, default=64,
+                    help='Dimension for doc2vec embedding')
+parser.add_argument('--node_emb_type', type=str, default='node2vec', choices=['node2vec', 'gat'],
+                    help='Choose between node embedding types [node2vec, gat]')
+parser.add_argument('--use_manual_features', action='store_true',
+                    help='Flag to use manual features')
+
 
 
 args = parser.parse_args()
@@ -81,10 +94,35 @@ if abstract_embed_path.is_file():
     abstracts_embeds = pickle.load(embed_file)
     embed_file.close()
 else :
-    embed_file = generate_abst_emb(abstracts)
+    if args.abstract_emb_type == 'sbert':
+        abstracts_embeds = generate_abst_emb_sbert(abstracts, abstract_embed_path)
+        abstract_feat_size = 768
+    elif args.abstract_emb_type == 'doc2vec':
+        abstracts_embeds = generate_abst_emb_doc2vec(abstracts, abstract_embed_path, args.doc2vec_dim)
+        abstract_feat_size = args.doc2vec_dim
+    else:
+        raise ValueError('Embedding type not supported for the abstracts')
 
-# Load pretrained Node2Vec model
-node2vec_model = Word2Vec.load("saved_model_embed_dim_64")
+# Load node embeddings if it exist, otherwise generate them
+node_embed_path = Path(args.base_feats_dir+args.node_embed_path)
+if node_embed_path.is_file():
+    print('Loading node embeddings')
+    embed_file = open(node_embed_path, "rb")
+    nodes_embeds = pickle.load(embed_file)
+    embed_file.close()
+else :
+    if args.node_emb_type == 'node2vec':
+        nodes_embeds = generate_abst_emb_node2vec(CHANGE, node_embed_path)
+        node_feat_size = args.node2vec_dim
+    elif args.node_emb_type == 'gat':
+        nodes_embeds = generate_abst_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
+        node_feat_size = 
+    else:
+        raise ValueError('Embedding type not supported for the nodes')
+
+# Add dimensions in the model for the manual features
+if args.use_manual_features:
+    node_feat_size += 3
 
 # Generate positive and negative edges list
 node_pairs = np.zeros((2*m, 2))
@@ -98,22 +136,20 @@ for i in range(m):
     node_pairs[m+i] = nodes
 
 # Create training dataset
-dataset = MyDataset(G, node_pairs, abstracts_embeds, node2vec_model.wv)
+dataset = MyDataset(G, node_pairs, abstracts_embeds, nodes_embeds)
 
 batch_size = args.batch_size
-train_set, test_set = torch.utils.data.random_split(dataset, [int(2*m*0.8), 2*m - int(2*m*0.8)])
+train_set, val_set = torch.utils.data.random_split(dataset, [int(2*m*args.train_percent), 2*m - int(2*m*args.train_percent)])
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 n_epochs = args.n_epochs
 
-model = MLP(768, 67).to(device)
+model = MLP(abstract_feat_size, node_feat_size, args.hidden_size, args.dropout).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = nn.NLLLoss()
 scheduler = StepLR(optimizer, step_size=args.decay_stp_sz, gamma=args.decay_gamma)
 
-###CONTINUE WORINKING FROM HERE
-
-train_losses_aux, test_losses_aux = train(model, device, train_loader, test_loader, optimizer, criterion, n_epochs, scheduler)
+train_losses, val_losses = train(model, device, train_loader, val_loader, optimizer, criterion, n_epochs, scheduler)

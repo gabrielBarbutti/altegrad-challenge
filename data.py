@@ -5,15 +5,15 @@ from manual_features import common_authors_publication,get_jaccard_index,get_ada
 
 
 class MyDataset(Dataset):
-    def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds,authors_embeds):
-
-    #def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds):
+    def __init__(self, G, node_pairs, abstracts_embeds, nodes_embeds, authors_dict):
         self.abstracts_embeds = abstracts_embeds
         self.nodes_embeds = nodes_embeds
-        self.authors_embeds = authors_embeds
+        self.authors_dict = authors_dict
         self.node_pairs = node_pairs        
         m = len(node_pairs)//2
         self.G = G
+
+        
         self.degree = get_degree(self.G)        
         self.pagerank = pagerank(self.G)
         self.degree_centrality = nx.algorithms.centrality.degree_centrality(self.G)        
@@ -26,7 +26,7 @@ class MyDataset(Dataset):
 
     def __getitem__(self, index):
         n1, n2 = self.node_pairs[index]
-        common_auth,common_pub = common_authors_publication(int(n1),int(n2),self.authors_embeds) 
+        common_auth,common_pub = common_authors_publication(int(n1),int(n2), self.authors_dict) 
         authors_emb = np.concatenate((common_auth,common_pub),axis=None)
         x_abstracts = np.concatenate((self.abstracts_embeds[int(n1)],
                                       self.abstracts_embeds[int(n2)]))      
@@ -43,8 +43,8 @@ class MyDataset(Dataset):
         else :
             x_adamic = 0
             
-        x_nodes = np.concatenate((self.nodes_embeds[str(int(n1))],
-                                  self.nodes_embeds[str(int(n2))]))
+        x_nodes = np.concatenate((self.nodes_embeds[int(n1)],
+                                  self.nodes_embeds[int(n2)]))
         node_features =  np.concatenate((x_sum_degree, x_diff_degree, x_jaccard, x_adamic), axis=None)
         x_nodes = np.concatenate((x_nodes,node_features),axis=None) #added
         

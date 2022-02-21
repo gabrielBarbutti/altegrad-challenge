@@ -1,20 +1,20 @@
 class MLP(nn.Module):
-    def __init__(self, abstract_emb_size, node_emb_size):
+    def __init__(self, abstract_emb_size, node_emb_size, hidden_size, dropout):
         super(MLP, self).__init__()
-        self.abstracts_layers = nn.Sequential(nn.Linear(abstract_emb_size*2, 100),
+        self.abstracts_layers = nn.Sequential(nn.Linear(abstract_emb_size*2, hidden_size),
                                               nn.ReLU(),
-                                              nn.BatchNorm1d(num_features=100),
-                                              nn.Dropout(p=0.4))
-        self.nodes_layers = nn.Sequential(nn.Linear(node_emb_size*2, 100),
+                                              nn.BatchNorm1d(num_features=hidden_size),
+                                              nn.Dropout(p=dropout))
+        self.nodes_layers = nn.Sequential(nn.Linear(node_emb_size*2, hidden_size),
                                           nn.ReLU(),
-                                          nn.BatchNorm1d(num_features=100),
-                                          nn.Dropout(p=0.4))
-        self.final_layers = nn.Sequential(nn.Linear(200, 200),
+                                          nn.BatchNorm1d(num_features=hidden_size),
+                                          nn.Dropout(p=dropout))
+        self.final_layers = nn.Sequential(nn.Linear(2*hidden_size, 2*hidden_size),
                                           nn.ReLU(),
-                                          nn.BatchNorm1d(num_features=200),
-                                          nn.Dropout(p=0.4),
+                                          nn.BatchNorm1d(num_features=2*hidden_size),
+                                          nn.Dropout(p=dropout),
                                           
-                                          nn.Linear(200, 2),
+                                          nn.Linear(2*hidden_size, 2),
                                           nn.LogSoftmax(dim=1))
         
     def forward(self, x_abstracts, x_nodes):
