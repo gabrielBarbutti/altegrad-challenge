@@ -1,10 +1,11 @@
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 import numpy as np
 import nltk
 
 try:
     nltk.data.find('tokenizers/punkt')
- except LookupError:
+except LookupError:
     nltk.download('punkt')
 
 

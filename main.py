@@ -9,6 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.optim.lr_scheduler import StepLR
+from pathlib import Path
+import pickle
 
 from data import MyDataset
 from train import train
@@ -88,7 +90,7 @@ with open(f'{args.base_data_dir}/authors.txt', 'r', encoding="utf8") as f:
 
 
 # Load abstract embeddings if it exist, otherwise generate them
-abstract_embed_path = Path(args.base_feats_dir+args.abst_emb_file)
+abstract_embed_path = Path(args.base_feats_dir+'/'+args.abst_emb_file)
 if abstract_embed_path.is_file():
     print('Loading abstract embeddings')
     embed_file = open(abstract_embed_path, "rb")
@@ -105,7 +107,7 @@ else :
         raise ValueError('Embedding type not supported for the abstracts')
 
 # Load node embeddings if it exist, otherwise generate them
-node_embed_path = Path(args.base_feats_dir+args.node_emb_file)
+node_embed_path = Path(args.base_feats_dir+'/'+args.node_emb_file)
 if node_embed_path.is_file():
     print('Loading node embeddings')
     embed_file = open(node_embed_path, "rb")
@@ -113,7 +115,7 @@ if node_embed_path.is_file():
     embed_file.close()
 else :
     if args.node_emb_type == 'node2vec':
-        nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, dim_emb)
+        nodes_embeds = generate_node_emb_node2vec(G, node_embed_path, n, args.doc2vec_dim)
         node_feat_size = args.node2vec_dim
     elif args.node_emb_type == 'gat':
         nodes_embeds = generate_node_emb_gat(CHANGE, node_embed_path, args.doc2vec_dim)
@@ -154,3 +156,33 @@ criterion = nn.NLLLoss()
 scheduler = StepLR(optimizer, step_size=args.decay_stp_sz, gamma=args.decay_gamma)
 
 train_losses, val_losses = train(model, device, train_loader, val_loader, optimizer, criterion, n_epochs, scheduler)
+
+node_pairs = list()
+with open('./data/test.txt', 'r') as f:
+    for line in f:
+        t = line.split(',')
+        node_pairs.append((int(t[0]), int(t[1])))
+node_pairs = np.array(node_pairs)
+
+test_set = MyDataset(G, node_pairs, abstracts_embeds, node2vec_model.wv)
+test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+
+y_pred = []
+model.eval()
+with torch.no_grad():
+    for idx, (x_abstracts, x_nodes, y) in enumerate(test_loader):
+        x_abstracts = x_abstracts.to(device)
+        x_nodes = x_nodes.to(device)
+        y = y.to(device)
+        y_pred += (F.softmax(model(x_abstracts, x_nodes), dim=1)[:, 1]).detach().cpu().tolist()
+
+
+
+# Write predictions to a file
+predictions = zip(range(len(y_pred)), y_pred)
+with open("submission_bert_node2vec_mlp_0_7_dropout.csv","w") as pred:
+    csv_out = csv.writer(pred)
+    csv_out.writerow(['id','predicted'])
+    for row in predictions:
+        csv_out.writerow(row)
