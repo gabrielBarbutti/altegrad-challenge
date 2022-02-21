@@ -1,3 +1,5 @@
+from torch import nn
+
 class MLP(nn.Module):
     def __init__(self, abstract_emb_size, node_emb_size, hidden_size, dropout):
         super(MLP, self).__init__()
