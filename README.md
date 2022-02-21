@@ -17,7 +17,7 @@ To facilitate the run of our model we created a colab notebook available [here](
 
 But you can also locally train the model as explained below.
 
-#### Prepare the environment
+### Prepare the environment
 We recommend the download of the following folders with the precomputed features and the dataset.
 
 - ./data [Google drive link](https://drive.google.com/drive/folders/1Li1ycoCGqvFARk8992R5UTL2D56cn6pg?usp=sharing)
@@ -32,14 +32,14 @@ Please install the following not so common libraries
 !pip install -q dgl
 ```
 
-#### Training
+### Training
 Use this command to reproduce our best model
 
 ```
 python main.py --use_manual_features
 ```
 
-#### Evaluate
+### Evaluate
 To create the submission file run the following
 
 ```
