@@ -51,9 +51,12 @@ In order to leverage the most of our three different sources of data (abstracts,
 
 The table  summarizes the results of our best input combinations, but not of the best models, as there were small variations that produced better models than the first 3 lines (the last line was indeed our best model). An example of this are the models of the second and third rows (SBERT \& GAT / SBERT \& Doc2Vec), which performed better when training with the whole dataset, but we decided to present the results of all models with the division of training and validation set to have a fairer comparison.
 
+We reached top 5 in kaggle challenge private leaderboard with 0.09725
+
 | Abstract Embedding | Node Embedding | Manual features | Train | Val | Test |
 | ------------- | ------------- | ------------- | --------- | --------- |--------- |
 | Doc2Vec | Node2Vec | No  | 0.078 | 0.052 | 0.225 |
 | SBERT | GAT | No  | 0.087 | 0.082 | 0.143 |
 | SBERT | Node2Vec | No  | 0.061 | 0.052 | 0.146 |
 | SBERT | Node2Vec | Yes  | 0.059 | 0.048 | 0.104 |
+[Result table : Negative - log likelihood obtained after training the network and choosing the model with the smallest validation loss. Test score is calculated with approximately 50% of the test dataset]
