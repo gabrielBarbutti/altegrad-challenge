@@ -81,6 +81,11 @@ else :
     raise ValueError('Nodes embedding needs to already be computed')
 node_feat_size = nodes_embeds.shape[1]
 
+# Add dimensions in the model for the manual features
+if args.use_manual_features:
+    print('Using manual features')
+    node_feat_size += 3
+
 # Create authors dict
 authors_dict = dict()
 authors_path = Path(args.base_data_dir).joinpath('authors.txt')
