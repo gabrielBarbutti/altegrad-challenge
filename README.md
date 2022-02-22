@@ -53,7 +53,7 @@ The table  summarizes the results of our best input combinations, but not of the
 
 We reached top 5 in kaggle challenge private leaderboard with 0.09725
 
-| Abstract Embedding | Node Embedding | Manual features | Train | Val | Test |
+| Abstract Embedding | Node Embedding | Hueristics/Manual features | Train | Val | Test |
 | ------------- | ------------- | ------------- | --------- | --------- |--------- |
 | Doc2Vec | Node2Vec | No  | 0.078 | 0.052 | 0.225 |
 | SBERT | GAT | No  | 0.087 | 0.082 | 0.143 |
