@@ -59,4 +59,6 @@ We reached top 5 in kaggle challenge private leaderboard with 0.09725
 | SBERT | GAT | No  | 0.087 | 0.082 | 0.143 |
 | SBERT | Node2Vec | No  | 0.061 | 0.052 | 0.146 |
 | SBERT | Node2Vec | Yes  | 0.059 | 0.048 | 0.104 |
-[Result table : Negative - log likelihood obtained after training the network and choosing the model with the smallest validation loss. Test score is calculated with approximately 50% of the test dataset]
+
+
+Result table : Negative - log likelihood obtained after training the network and choosing the model with the smallest validation loss. Test score is calculated with approximately 50% of the test dataset
